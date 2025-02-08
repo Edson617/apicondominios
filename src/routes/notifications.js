@@ -3,6 +3,7 @@ const router = express.Router();
 const Notification = require('../models/notification'); // Modelo de notificaciones
 const Multa = require('../models/multas'); // Modelo de multas, si lo necesitas
 const authMiddleware = require('../middleware/auth'); 
+
 // Ruta para obtener notificaciones por departamento
 router.get('/notifications', authMiddleware, async (req, res) => {
   try {
@@ -23,7 +24,6 @@ router.get('/notifications', authMiddleware, async (req, res) => {
     res.status(500).json({ message: 'Error al obtener las notificaciones' });
   }
 });
-
 
 // Ruta para marcar una notificación como leída
 router.put('/notificaciones/:id/marcar_leida', async (req, res) => {
@@ -71,6 +71,30 @@ router.post('/notificaciones/crear', async (req, res) => {
   } catch (error) {
     console.error('Error al crear la notificación:', error);
     res.status(500).json({ message: 'Error al crear la notificación' });
+  }
+});
+
+// Ruta para eliminar una notificación por su ID
+router.delete('/notificaciones/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validar si se recibió el ID de la notificación
+    if (!id) {
+      return res.status(400).json({ message: 'El parámetro "id" es obligatorio' });
+    }
+
+    // Buscar y eliminar la notificación
+    const deletedNotification = await Notification.findByIdAndDelete(id);
+
+    if (!deletedNotification) {
+      return res.status(404).json({ message: 'Notificación no encontrada' });
+    }
+
+    res.json({ message: 'Notificación eliminada con éxito' });
+  } catch (error) {
+    console.error('Error al eliminar la notificación:', error);
+    res.status(500).json({ message: 'Error al eliminar la notificación' });
   }
 });
 
