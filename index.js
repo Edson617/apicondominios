@@ -23,8 +23,9 @@ app.use(cors());
 app.use(express.json());
 
 // Rutas
+app.use("/api/auth", authRoutes);
 app.use("/api", multas);
-app.use("/api", authRoutes);
+
 app.use("/api", notificationRoutes);
 
 // Servidor

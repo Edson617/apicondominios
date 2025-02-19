@@ -1,10 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const Notification = require('../models/notification'); // Modelo de notificaciones
-const Multa = require('../models/multas'); // Modelo de multas, si lo necesitas
 const authMiddleware = require('../middleware/auth'); 
 
-// Ruta para obtener notificaciones por departamento
+/// Ruta para obtener notificaciones por departamento
 router.get('/notifications', authMiddleware, async (req, res) => {
   try {
     const userDepartment = req.user.department; // Se obtiene del token de autenticación
@@ -24,9 +23,8 @@ router.get('/notifications', authMiddleware, async (req, res) => {
     res.status(500).json({ message: 'Error al obtener las notificaciones' });
   }
 });
-
 // Ruta para marcar una notificación como leída
-router.put('/notificaciones/:id/marcar_leida', async (req, res) => {
+router.put('/notificaciones/:id/marcar_leida', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -54,7 +52,7 @@ router.put('/notificaciones/:id/marcar_leida', async (req, res) => {
 });
 
 // Ruta para crear una notificación cuando se inserta una multa
-router.post('/notificaciones/crear', async (req, res) => {
+router.post('/notificaciones/crear', authMiddleware, async (req, res) => {
   try {
     const { multaId, department, message } = req.body;
 
@@ -75,7 +73,7 @@ router.post('/notificaciones/crear', async (req, res) => {
 });
 
 // Ruta para eliminar una notificación por su ID
-router.delete('/notificaciones/:id', async (req, res) => {
+router.delete('/notificaciones/:id', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
 
