@@ -1,11 +1,13 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const connectDB = require("./database");
 
+const connectDB = require("./database");
+const authMiddleware = require("./src/middleware/auth"); // Importar middleware de autenticación
+const allowedOrigins = ['https://condominios-j9k1.vercel.app'];
 // Importar rutas
-const multas = require("./src/routes/multas.js");
 const authRoutes = require("./src/routes/auth.js");
+const multasRoutes = require("./src/routes/multas.js");
 const notificationRoutes = require("./src/routes/notifications.js");
 
 const app = express();
@@ -20,13 +22,30 @@ connectDB()
 
 // Middleware
 app.use(cors());
+
 app.use(express.json());
 
-// Rutas
+// Rutas públicas (No requieren autenticación)
 app.use("/api/auth", authRoutes);
-app.use("/api", multas);
 
-app.use("/api", notificationRoutes);
+// Rutas protegidas (Requieren autenticación)
+app.use("/api/multas", authMiddleware, multasRoutes);
+app.use("/api/notifications", authMiddleware, notificationRoutes);
+
+// Middleware global para manejar errores
+app.use((err, req, res, next) => {
+  console.error("❌ Error en el servidor:", err);
+  res.status(500).json({ message: "Error interno del servidor" });
+});
+
+app.use((req, res, next) => {
+   const origin = req.headers.origin;
+   if (allowedOrigins.includes(origin)) {
+        next();
+    } else {
+        res.status(403).json({ error: 'Acceso no permitido' });
+    }
+ });
 
 // Servidor
 const PORT = process.env.PORT || 4000;
