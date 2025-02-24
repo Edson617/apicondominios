@@ -3,9 +3,6 @@ const express = require("express");
 const cors = require("cors");
 
 const connectDB = require("./database");
-const authMiddleware = require("./src/middleware/auth"); // Importar middleware de autenticación
-const allowedOrigins = ['https://condominios-j9k1.vercel.app'];
-// Importar rutas
 const authRoutes = require("./src/routes/auth.js");
 const multasRoutes = require("./src/routes/multas.js");
 const notificationRoutes = require("./src/routes/notifications.js");
@@ -20,32 +17,32 @@ connectDB()
     process.exit(1); // Detener el servidor si no se conecta a la base de datos
   });
 
-// Middleware
-app.use(cors());
+// Configuración de CORS para permitir solicitudes desde localhost y el dominio de producción
+const allowedOrigins = [
+  'https://condominios-j9k1.vercel.app',  // Dominio de producción
+  'http://localhost:4000'                 // Dominio de desarrollo (localhost)
+];
+
+// Middleware CORS
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
 
 app.use(express.json());
 
 // Rutas públicas (No requieren autenticación)
-app.use("/api/auth", authRoutes);
+app.use("/api", authRoutes); // Ruta pública de autenticación
 
 // Rutas protegidas (Requieren autenticación)
-app.use("/api/multas", authMiddleware, multasRoutes);
-app.use("/api/notifications", authMiddleware, notificationRoutes);
+app.use("/api/multas", multasRoutes); // Ruta de multas
+app.use("/api/notifications", notificationRoutes); // Ruta de notificaciones
 
 // Middleware global para manejar errores
 app.use((err, req, res, next) => {
   console.error("❌ Error en el servidor:", err);
   res.status(500).json({ message: "Error interno del servidor" });
 });
-
-app.use((req, res, next) => {
-   const origin = req.headers.origin;
-   if (allowedOrigins.includes(origin)) {
-        next();
-    } else {
-        res.status(403).json({ error: 'Acceso no permitido' });
-    }
- });
 
 // Servidor
 const PORT = process.env.PORT || 4000;

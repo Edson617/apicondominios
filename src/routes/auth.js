@@ -2,7 +2,6 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
-require("dotenv").config(); // Cargar variables de entorno
 
 const router = express.Router();
 
@@ -24,11 +23,7 @@ router.post("/register", async (req, res) => {
     const validRoles = ["admin", "user"];
     const userRole = validRoles.includes(role) ? role : "user";
 
-    // Hashear la contraseña antes de guardar
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    const newUser = new User({ phone, email, password: hashedPassword, name, department, role: userRole });
+    const newUser = new User({ phone, email, password, name, department, role: userRole });
     await newUser.save();
 
     res.status(201).json({
@@ -55,19 +50,24 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ message: "Usuario no encontrado" });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await user.comparePassword(password); // Compara la contraseña encriptada
     if (!isMatch) {
       return res.status(400).json({ message: "Contraseña incorrecta" });
     }
 
-    // Generar token
     const token = jwt.sign(
       { id: user._id, phone: user.phone, department: user.department, role: user.role },
-      process.env.JWT_SECRET, // Se usa una variable de entorno
+      "tu_secreto_jwt",
       { expiresIn: "1h" }
     );
 
-    res.json({ message: "Login exitoso", token, role: user.role });
+    res.json({
+      message: "Login exitoso",
+      token,
+      role: user.role,
+      phone: user.phone,
+      department: user.department,
+    });
   } catch (error) {
     console.error("Error en el login:", error);
     res.status(500).json({ message: "Error en el servidor" });
