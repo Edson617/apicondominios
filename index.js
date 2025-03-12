@@ -19,7 +19,13 @@ connectDB()
   });
 
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: 'https://condominios-m3p7.vercel.app',  // Permitir solicitudes solo desde este dominio
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Ajusta los métodos que desees permitir
+    allowedHeaders: ['Content-Type', 'Authorization'], // Permitir cabeceras necesarias para autenticación
+  })
+);
 app.use(express.json());
 
 // Rutas
