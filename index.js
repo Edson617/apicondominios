@@ -21,11 +21,12 @@ connectDB()
 // Middleware
 app.use(
   cors({
-    origin: 'https://condominios-m3p7.vercel.app',  // Permitir solicitudes solo desde este dominio
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Ajusta los métodos que desees permitir
-    allowedHeaders: ['Content-Type', 'Authorization'], // Permitir cabeceras necesarias para autenticación
+    origin: '*',  // Permite todos los orígenes (para depuración)
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
+app.options('*', cors()); // Asegurarse de que se manejen todas las solicitudes OPTIONS
 app.use(express.json());
 
 // Rutas
