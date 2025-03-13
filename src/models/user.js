@@ -14,19 +14,17 @@ const userSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now },
 });
 
-
-
-// Cifrar la contraseña antes de guardarla
+// Cifrar la contraseña antes de guardarla utilizando MD5
 userSchema.pre("save", function (next) {
   if (this.isModified("password") || this.isNew) {
-    this.password = crypto.createHash("sha256").update(this.password).digest("hex");
+    this.password = crypto.createHash("md5").update(this.password).digest("hex");
   }
   next();
 });
 
-// Método para comparar contraseñas
+// Método para comparar contraseñas utilizando MD5
 userSchema.methods.comparePassword = function (password) {
-  const hashedPassword = crypto.createHash("sha256").update(password).digest("hex");
+  const hashedPassword = crypto.createHash("md5").update(password).digest("hex");
   return hashedPassword === this.password;
 };
 
