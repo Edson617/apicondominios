@@ -6,21 +6,24 @@ const checkRole = require("../middleware/checkRole");
 
 const router = express.Router();
 
-// Ruta de registro (sin encriptación de la contraseña)
+// Ruta de registro (la encriptación se realiza en el pre-save del modelo)
 router.post("/register", async (req, res) => {
   try {
     const { phone, email, password, name, department, role } = req.body;
     if (!phone || !email || !password || !name || !department) {
       return res.status(400).json({ message: "Todos los campos son requeridos" });
     }
+
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "El correo electrónico ya está registrado" });
     }
+
     const validRoles = ["admin", "user"];
     const userRole = validRoles.includes(role) ? role : "user";
     const newUser = new User({ phone, email, password, name, department, role: userRole });
     await newUser.save();
+
     res.status(201).json({
       message: "Usuario registrado con éxito",
       user: { phone: newUser.phone, email: newUser.email, department: newUser.department, role: newUser.role },
@@ -35,7 +38,6 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const { phone, password } = req.body;
-
     if (!phone || !password) {
       return res.status(400).json({ message: "El teléfono y la contraseña son obligatorios" });
     }
@@ -45,20 +47,23 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ message: "Usuario no encontrado" });
     }
 
-    // Comparar la contraseña directamente, sin encriptación
-    if (password !== user.password) {
+    // Comparar la contraseña ingresada usando comparePassword (que usa argon2.verify internamente)
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
       return res.status(400).json({ message: "Contraseña incorrecta" });
     }
 
-    // Generar un nuevo token
+    // Generar un token JWT
     const token = jwt.sign(
       { id: user._id, phone: user.phone, department: user.department, role: user.role },
-      "tu_secreto_jwt", // Usa la clave secreta que has configurado
+      "tu_secreto_jwt", // Asegúrate de usar tu clave secreta configurada o una variable de entorno
       { expiresIn: "1h" }
     );
 
-    // Guardar el hash del token en la base de datos (aunque ya no lo usas)
-    await user.updateTokenHash(token);
+    // Si tienes implementado updateTokenHash en el modelo, se puede llamar aquí
+    if (typeof user.updateTokenHash === "function") {
+      await user.updateTokenHash(token);
+    }
 
     res.json({
       message: "Login exitoso",
@@ -80,15 +85,22 @@ router.post("/change-password", authMiddleware, async (req, res) => {
     if (!oldPassword || !newPassword) {
       return res.status(400).json({ message: "Ambas contraseñas son requeridas" });
     }
+
     const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(400).json({ message: "Usuario no encontrado" });
     }
-    if (oldPassword !== user.password) {
+
+    // Verificar la contraseña actual usando comparePassword
+    const isMatch = await user.comparePassword(oldPassword);
+    if (!isMatch) {
       return res.status(400).json({ message: "La contraseña actual no es correcta" });
     }
+
+    // Asignar la nueva contraseña. Al guardar, el hook pre-save la encriptará automáticamente.
     user.password = newPassword;
     await user.save();
+
     res.json({ message: "Contraseña cambiada con éxito. Inicia sesión nuevamente." });
   } catch (error) {
     console.error("Error al cambiar la contraseña:", error);
@@ -99,7 +111,7 @@ router.post("/change-password", authMiddleware, async (req, res) => {
 // Ejemplo de ruta que solo los administradores pueden acceder
 router.post("/admin-action", authMiddleware, checkRole(["admin"]), async (req, res) => {
   try {
-    // Solo administradores podrán acceder aquí
+    // Solo los administradores podrán acceder a esta ruta
     res.json({ message: "Acción realizada por un administrador" });
   } catch (error) {
     console.error("Error en la acción del admin:", error);
