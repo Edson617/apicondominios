@@ -8,8 +8,12 @@ const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   department: { type: String, required: true },
   role: { type: String, default: "user" },
+  token: { type: String, default: null },  // Campo para el token JWT
+  tokensHash: { type: String, default: null },  // Campo para el hash del token
   createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
 });
+
 
 
 // Cifrar la contraseña antes de guardarla
