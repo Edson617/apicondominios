@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const argon2 = require("argon2");  // Importamos argon2
 
 const userSchema = new mongoose.Schema({
   phone: { type: String, required: true, unique: true },
@@ -13,16 +14,29 @@ const userSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now },
 });
 
-// Eliminar la encriptación de la contraseña antes de guardarla
-userSchema.pre("save", function (next) {
-  // Ya no vamos a encriptar la contraseña
-  next();
+// Encriptar la contraseña antes de guardarla
+userSchema.pre("save", async function (next) {
+  if (this.isModified("password")) {  // Solo encriptar si la contraseña ha cambiado
+    try {
+      const hashedPassword = await argon2.hash(this.password);  // Hashing de la contraseña
+      this.password = hashedPassword;  // Guardamos la contraseña hasheada
+      next();
+    } catch (err) {
+      next(err);  // En caso de error, pasamos el error a next
+    }
+  } else {
+    next();
+  }
 });
 
 // Método para comparar contraseñas
-userSchema.methods.comparePassword = function (password) {
-  // Comparar directamente las contraseñas
-  return password === this.password;
+userSchema.methods.comparePassword = async function (password) {
+  try {
+    const isMatch = await argon2.verify(this.password, password);  // Comparar la contraseña
+    return isMatch;
+  } catch (err) {
+    throw new Error("Error al comparar las contraseñas");
+  }
 };
 
 const User = mongoose.model("User", userSchema);
