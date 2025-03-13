@@ -1,5 +1,4 @@
 const express = require("express");
-const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 const authMiddleware = require("../middleware/auth");
@@ -7,7 +6,7 @@ const checkRole = require("../middleware/checkRole");
 
 const router = express.Router();
 
-// Ruta de registro (sin cambios)
+// Ruta de registro (sin encriptación de la contraseña)
 router.post("/register", async (req, res) => {
   try {
     const { phone, email, password, name, department, role } = req.body;
@@ -20,8 +19,7 @@ router.post("/register", async (req, res) => {
     }
     const validRoles = ["admin", "user"];
     const userRole = validRoles.includes(role) ? role : "user";
-    const hashedPassword = crypto.createHash("md5").update(password).digest("hex");
-    const newUser = new User({ phone, email, password: hashedPassword, name, department, role: userRole });
+    const newUser = new User({ phone, email, password, name, department, role: userRole });
     await newUser.save();
     res.status(201).json({
       message: "Usuario registrado con éxito",
@@ -33,8 +31,6 @@ router.post("/register", async (req, res) => {
   }
 });
 
-
-// Ruta de login
 // Ruta de login
 router.post("/login", async (req, res) => {
   try {
@@ -49,9 +45,8 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ message: "Usuario no encontrado" });
     }
 
-    // Usar MD5 para comparar la contraseña
-    const hashedPassword = crypto.createHash("md5").update(password).digest("hex");
-    if (hashedPassword !== user.password) {
+    // Comparar la contraseña directamente, sin encriptación
+    if (password !== user.password) {
       return res.status(400).json({ message: "Contraseña incorrecta" });
     }
 
@@ -62,7 +57,7 @@ router.post("/login", async (req, res) => {
       { expiresIn: "1h" }
     );
 
-    // Guardar el hash del token en la base de datos
+    // Guardar el hash del token en la base de datos (aunque ya no lo usas)
     await user.updateTokenHash(token);
 
     res.json({
@@ -78,8 +73,6 @@ router.post("/login", async (req, res) => {
   }
 });
 
-
-
 // Ruta para cambiar la contraseña (solo para el usuario autenticado)
 router.post("/change-password", authMiddleware, async (req, res) => {
   try {
@@ -91,7 +84,7 @@ router.post("/change-password", authMiddleware, async (req, res) => {
     if (!user) {
       return res.status(400).json({ message: "Usuario no encontrado" });
     }
-    if (!user.comparePassword(oldPassword)) {
+    if (oldPassword !== user.password) {
       return res.status(400).json({ message: "La contraseña actual no es correcta" });
     }
     user.password = newPassword;

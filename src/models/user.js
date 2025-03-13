@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const crypto = require("crypto");
 
 const userSchema = new mongoose.Schema({
   phone: { type: String, required: true, unique: true },
@@ -14,24 +13,16 @@ const userSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now },
 });
 
-// Cifrar la contraseña antes de guardarla utilizando MD5
+// Eliminar la encriptación de la contraseña antes de guardarla
 userSchema.pre("save", function (next) {
-  if (this.isModified("password") || this.isNew) {
-    this.password = crypto.createHash("md5").update(this.password).digest("hex");
-  }
+  // Ya no vamos a encriptar la contraseña
   next();
 });
 
-// Método para comparar contraseñas utilizando MD5
+// Método para comparar contraseñas
 userSchema.methods.comparePassword = function (password) {
-  const hashedPassword = crypto.createHash("md5").update(password).digest("hex");
-  return hashedPassword === this.password;
-};
-
-// Método para actualizar el hash del token
-userSchema.methods.updateTokenHash = async function (token) {
-  this.tokenHash = crypto.createHash("sha256").update(token).digest("hex");
-  await this.save();
+  // Comparar directamente las contraseñas
+  return password === this.password;
 };
 
 const User = mongoose.model("User", userSchema);
