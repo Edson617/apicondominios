@@ -1,9 +1,7 @@
-
 const express = require('express');
 const router = express.Router();
-const Notification = require('../models/notification'); // Modelo de notificaciones
-const Multa = require('../models/multas'); // Modelo de multas, si lo necesitas
-const authMiddleware = require('../middleware/auth'); 
+const Notification = require('../models/notification');
+const authMiddleware = require('../middleware/auth');
 
 // Ruta para obtener notificaciones por departamento
 router.get('/notifications', authMiddleware, async (req, res) => {
@@ -27,11 +25,10 @@ router.get('/notifications', authMiddleware, async (req, res) => {
 });
 
 // Ruta para marcar una notificación como leída
-router.put('/notificaciones/:id/marcar_leida', async (req, res) => {
+router.put('/notificaciones/:id/marcar_leida', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Validar si se recibió el ID de la notificación
     if (!id) {
       return res.status(400).json({ message: 'El parámetro "id" es obligatorio' });
     }
@@ -40,7 +37,7 @@ router.put('/notificaciones/:id/marcar_leida', async (req, res) => {
     const notification = await Notification.findByIdAndUpdate(
       id,
       { isRead: true },
-      { new: true } // Retorna el documento actualizado
+      { new: true }
     );
 
     if (!notification) {
@@ -54,17 +51,15 @@ router.put('/notificaciones/:id/marcar_leida', async (req, res) => {
   }
 });
 
-// Ruta para crear una notificación cuando se inserta una multa
-router.post('/notificaciones/crear', async (req, res) => {
+// Ruta para crear una notificación
+router.post('/notificaciones/crear', authMiddleware, async (req, res) => {
   try {
     const { multaId, department, message } = req.body;
 
-    // Validar los datos necesarios
     if (!multaId || !department || !message) {
       return res.status(400).json({ message: 'Todos los campos son obligatorios' });
     }
 
-    // Crear una nueva notificación
     const newNotification = new Notification({ multaId, department, message });
     await newNotification.save();
 
@@ -75,17 +70,15 @@ router.post('/notificaciones/crear', async (req, res) => {
   }
 });
 
-// Ruta para eliminar una notificación por su ID
-router.delete('/notificaciones/:id', async (req, res) => {
+// Ruta para eliminar una notificación
+router.delete('/notificaciones/:id', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Validar si se recibió el ID de la notificación
     if (!id) {
       return res.status(400).json({ message: 'El parámetro "id" es obligatorio' });
     }
 
-    // Buscar y eliminar la notificación
     const deletedNotification = await Notification.findByIdAndDelete(id);
 
     if (!deletedNotification) {

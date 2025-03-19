@@ -14,14 +14,21 @@ const authMiddleware = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || "tu_secreto_jwt");
     console.log("Token verificado, usuario autenticado:", decoded);
 
-    // Buscar el usuario por el ID del token
+    // Buscar el usuario en la base de datos
     const user = await User.findById(decoded.id);
     if (!user) {
       return res.status(401).json({ message: "Usuario no encontrado" });
     }
 
-    // Asignar el usuario a la request
-    req.user = decoded;
+    // Asignar el usuario a la request con toda la información necesaria
+    req.user = {
+      id: user.id,
+      phone: user.phone,
+      department: user.department, // Asegurar que el departamento esté disponible
+      role: user.role,
+    };
+
+    console.log("Usuario con datos completos en req.user:", req.user);
     next();
   } catch (error) {
     console.error("Error al verificar el token:", error);
